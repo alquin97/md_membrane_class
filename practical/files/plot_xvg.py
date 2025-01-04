@@ -10,7 +10,7 @@ def read_xvg(file):
         for line in f.readlines():
             if '#' not in line and '@' not in line:
                 row = [float(x) for x in line.split()]
-                df = df.append([row])
+                df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
     return df
 
 df = read_xvg(file)
