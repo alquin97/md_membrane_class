@@ -1,3 +1,5 @@
+*Adapted repository from nilcm10. Check the original at https://github.com/nilcm10/md_membrane_env.git.
+
 # Molecular Dynamics in a Membrane Environment
 
 ![](practical/files/images/box+water.png)
