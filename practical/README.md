@@ -16,9 +16,9 @@ This part of the protocol will be done under `just_popc/`:
 cd just_popc
 ```
 
-#### Membrane creation with [PACKMOL-Memgen](https://pubs.acs.org/doi/10.1021/acs.jcim.9b00269)
+#### Membrane creation with PACKMOL-Memgen
 
-First, create a membrane with just POPC. With the following command, we're defining a 75x75 A membrane.
+First, create a membrane with just POPC using [PACKMOL-Memgen](https://pubs.acs.org/doi/10.1021/acs.jcim.9b00269). With the following command, we're defining a 75x75 A membrane.
 
 ```
 packmol-memgen --lipids POPC --distxy_fix 75
@@ -57,7 +57,7 @@ At the moment, we have the required parameters to run the system in [Amber](http
 ```
 amb2gro_top_gro.py -p system.prmtop -c system.rst -t system_GMX.top -g system_GMX.gro -b system_out.pdb
 ```
-Finally, copy the 'molecular dynamics parameters' files (.mdp) for the following parts.
+Finally, copy the 'molecular dynamics parameters' files (.mdp) required for the following parts.
 
 ```
 cp -r ../files/mdp .
@@ -161,22 +161,18 @@ gmx grompp -f mdp/prod.mdp -r system_equi3.gro -c system_equi3.gro -p system_GMX
 gmx mdrun -deffnm system_prod -v
 ```
 **IMPORTANT: Two problems arise here:**
-- **1) If you use the provided output for the equilibration `gmx grompp` will likely not go through because the shared system_equi3.gro file and the previously generated system_GMX.top file don't match (inescapable condition). This is true as the two systems were built slightly different.**
+- **1) If you use the externally provided output of the equilibration, `gmx grompp` will likely not go through because the shared system_equi3.gro file and your previously generated system_GMX.top file don't match in atom number (inescapable condition). This is true as the two systems were built slightly different (different PACKMOL-Memgen runs).**
 - **2) Again, the simulation run takes too long to finish. Proceed with the shared output files.**
 
-#### Analysis
-
-What we're going to do now is a bit of analysis of our membrane. The two typical measurements to assess are the **membrane thickness** and the **area per lipid (APL)**. So as to do that, we're going to use [FATSLiM](http://fatslim.github.io/) a package ready to analyze membrane simulations.
-
-Before doing that you can also check how it visually looks like:
+Once finished, see what the simulation looks like.
 
 ```
 vmd system_equi3.gro system_prod.xtc
 ```
 
-##### Membrane thickness
+#### Analysis
 
-Before using `fatslim`, we need to define an entry in the index called `headgroups`, indicating the phosphate groups of the lipids. Thus, we need to generate an index with GROMACS first:
+Next, we will do a short analysis of our membrane. The two typical measurements to examine are the **membrane thickness** and the **area per lipid (APL)**. Use [FATSLiM](http://fatslim.github.io/) to analyze membrane simulations. FATSLiM makes use of lipid 'head groups' to calculate these two values, which must be defined in a index file. Use GROMACS to create a new index file with the lipid head groups properly indexed.
 
 ```
 gmx make_ndx -f system_equi3.gro -o fatslim.ndx<<EOF
@@ -185,20 +181,25 @@ name 8 headgroups
 q
 EOF
 ```
+> Question: Which atom is the head group of POPC?
 
-This will create an index for fatslim with the atom IDs of the phosphate groups in the POPC molecules. 
+##### Membrane thickness 
 
-To determine membrane thickness the command to be used:
+To determine the membrane thickness run the following command.
 
 ```
 fatslim thickness -c system_equi3.gro -t system_prod.xtc -n fatslim.ndx --plot-thickness thickness.xvg
 ```
 
-The software will give us the thickness per leaflet and for the whole membrane. Moreover, with the option `--plot-thickness` we can obtain a plot of the thickness over time. You can again use `xmgrace` or `plot_xvg.py` to visualize the plot.
+The software will give us both the thickness per leaflet and for the whole membrane. Moreover, with the option `--plot-thickness` we can obtain a plot of the thickness over time. You can again use `xmgrace` or the provided python script to plot the .xvg file.
+
+```
+python ../files/plot_xvg.py thickness.xvg
+```
 
 ##### Area per lipid (APL)
 
-In this case, we will use:
+The APL is calculated with the following command.
 
 ```
 fatslim apl -c system_equi3.gro -t system_prod.xtc -n fatslim.ndx --plot-apl apl.xvg
@@ -214,15 +215,19 @@ This part of the protocol will be done under `popc+chl/`:
 cd ../popc+chl
 ```
 
-Now we're going to simulate a membrane with a ratio of 1 cholesterol molecule per 3 of POPC. Create the membrane with packmol-memgen to begin with:
+In this case, we are going to simulate a membrane with a ratio of 1:3 cholesterol molecules per POPC. Create the membrane with PACKMOL-Memgen with the apropiate input flags.
 
 ```
 packmol-memgen --lipids POPC:CHL1 --ratio 3:1 --distxy_fix 75
 ```
 
-Check how it looks like again with `vmd`. Spot where the cholesterol molecules are.
+Visualize the system (in VMD or PyMOL) and spot the cholesterol molecules. 
 
-In the same OneDrive link provided before there's also a 100 ns simulation of a similar POPC+CHL membrane system. Repeat the previous analysis to measure the membrane thickness and APL, and compare those to the POPC-only membrane.
+> Note: We are gonna skip the system preparation that we did before for the just POPC membrane. If you attempt to run the same preparation protocol for the POPC+CHL membrane, consider that there must be two instances of lipid [ moleculetype ] (one for POPC and one for CHL) in the GROMACS .top file, each with their corresponding positional restraints for the equilibration.
+
+In the same shared folder provided before you will find a 100 ns simulation of a similar POPC+CHL membrane system. Repeat the previous analysis to measure the membrane thickness and APL, and compare those to the POPC-only membrane.
+
+> Hint: Now there are two molecule types contributing to the head groups.
 
 ```
 gmx make_ndx -f system_equi3.gro -o fatslim.ndx<<EOF
@@ -231,6 +236,7 @@ name 9 headgroups
 q
 EOF
 ```
+> Question: Which atom is the head group of CHL?
 
 ## Protein-Membrane system
 
@@ -242,62 +248,65 @@ cd ../membrane_protein
 
 ### Building the system
 
-In here we're going to create a bilayer for a membrane protein. Our membrane protein is a refined structure of the Cannabinoid Receptor 2 (CB2). 
+This is the real deal. We are going to embed a membrane protein in a lipid bilayer. Our membrane protein is a refined structure of the Cannabinoid Receptor 2 (CB2), a class A GPCR that contains 7 characteristic transmembrane helices. 
 
 ![](files/images/pdbcb2.png)
 
-Run the following command:
+Run PACKMOL-Memgen on the provided `protein.pdb` file. Then visualize the system (with VMD or PyMOL).
 
 ```
 packmol-memgen --pdb protein.pdb --lipids POPC:CHL1 --ratio 10:1 \
     --dist 12 --dist_wat 15 --salt --salt_c Na+
 ```
-
-What we're doing now is building a bilayer for our protein, 12 A to the edges of the box in the X and Y axis, 15 A in the Z axis, and with a concentration of salt of 0.15 M (need to specify the cation).
-
-Check the output .PDB with vmd:
+> Note: Here, the membrane is built 12 A from the protein to the edges of the box in the X and Y axis and 15 A in the Z axis. We have chosen a concentration of salt of 0.15 M (cations and anions can be specified).
 
 ```
 vmd bilayer_protein.pdb
 ```
 
-We're not gonna go over again the steps we followed before because it's probably gonna take even longer than the previous parts. So we're going to go straight to the analysis part. 
+Again, we are not gonna go over the preparation steps we followed before (because it's gonna take longer than the previous parts). So we are jumping straight to the analysis. 
 
 ### Analysis
 
-In the same OneDrive link, a 100 ns trajectory of a system (similar) to the one you've created. That is a CB2 receptor embedded in a 10:1 POPC:CHL membrane, with 0.15 M NaCl. We're going to proceed now to the analysis of some variables concerning the membrane protein.
+Copy the 100 ns trajectory of the CB2 receptor embedded in a 10:1 POPC:CHL membrane provided in the shared folder. In this section, we will focus our attention to values concerning the protein rather than the lipids.
 
 #### RMSD
 
-We're gonna first measure the RMSD of the C-alpha atoms of our receptor along the trajectory. This can be done with GROMACS:
+First, measure the RMSD of the C-alpha atoms of the receptor along the trajectory. This can be easliy done with GROMACS.
 
 ```
 gmx rms -f system_prod.xtc -s system_equi6.gro -o rmsd.xvg
 ```
 
-Select the "C-alpha" group twice (type "3", press Enter, and type "3" again). GROMACS will automatically align all the coordinates and calculate the RMSD for the C-alpha atoms of our protein.
+GROMACS will prompt us 1) which group to align the system coordinates to and 2) which group to compute the RMSD for. Select the `C-alpha` group in both cases (type `3` and press `Enter`). This way GROMACS will automatically align all the coordinates and calculate the RMSD for the C-alpha atoms of our protein. Plot the .xvg file.
 
-You can again plot it with the python script.
+```
+python ../files/plot_xvg.py rmsd.xvg
+```
 
 #### RMSF
 
-Now we're going to calculate the RMSF of the structure througout the simulation. This will help us determine how stable are our transmembrane alpha-helices. 
+Now, calculate the RMSF of the structure throughout the simulation. This will help us determine how stable our transmembrane alpha-helices are or whether there is some specially labile part of the protein.
 
 ```
 gmx rmsf -f system_prod.xtc -s system_equi6.gro -o rmsf.xvg
 ```
 
-Select "C-alpha" as well. And again, plot it with whatever you want.
+Select `C-alpha` as well. Plot the results.
+
+```
+python ../files/plot_xvg.py rmsf.xvg
+```
 
 #### Secondary Structure analysis
 
-Finally we're going to perform a simple secondary structure analysis to further assess the stability of the TM helices.
+Last, we are going to perform a simple secondary structure analysis to further assess the stability of the transmembrane helices.
 
 ```
 gmx dssp -f system_prod.xtc -s system_equi6.gro -o dssp.dat
 ```
 
-Technically it should know, based on the `index.ndx`, what the atoms of the Protein are. The output `dssp.dat` contains the secondary structure prediction per residue (each character) per frame (each line). Each letter stand for:
+GROMACS knows, based on the `index.ndx`, what the atoms of the Protein are. The output `dssp.dat` contains the secondary structure prediction per residue (each character) per frame (each line). Each letter stands for:
 - H = α-helix
 - B = residue in isolated β-bridge
 - E = extended strand, participates in β ladder
@@ -307,10 +316,9 @@ Technically it should know, based on the `index.ndx`, what the atoms of the Prot
 - S = bend
 - ~ = unknown
 
-You can try to plot it yourselves (this won't work with XMGRACE), or use this trashy script:
+Plot the output file. You can use this trashy script.
 
 ```
 python ../files/plot_dssp.py dssp.dat
 ```
-
-This will return a `dssp.png` with a heatmap, where each color represents a letter (secondary structure), the sequence in the X-axis and each frame in the Y-axis.
+> Note: This will return a `dssp.png` with a heatmap, where each color represents a letter (secondary structure), the sequence in the X-axis and each frame in the Y-axis.
