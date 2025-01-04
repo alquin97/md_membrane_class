@@ -35,11 +35,11 @@ Once you have it installed, you probably have to restart your terminal or do `so
 
 ### Creating an environment
 
-Create a conda environment with the name `md_membrane`. Virtual environments are isolated working environments each with their own independent set of Python packages installed to ensure compatibility within the same project.
+Create a conda environment with the name `md_membrane_class`. Virtual environments are isolated working environments each with their own independent set of Python packages installed to ensure compatibility within the same project.
 
 ```
-conda create -n md_membrane python=3.8
-conda activate md_membrane
+conda create -n md_membrane_class python=3.8
+conda activate md_membrane_class
 ```
 
 Next, install all the packages needed through `conda install`. PACKMOL-Memgen is included in the `ambertools` package suite.
