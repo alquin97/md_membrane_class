@@ -24,7 +24,7 @@ First, create a membrane with just POPC. With the following command, we're defin
 packmol-memgen --lipids POPC --distxy_fix 75
 ```
 
-> Note: we're not adding any concentration of ions. Ideally there should be a salt concentration of 0.15M to replicate more accurately the real conditions. However, for the purposes of the tutorial, we're not adding any. Our system is already neutral so it won't necessarily affect the electrostatics.
+> Note: We are not adding any concentration of ions. Ideally there should be a salt concentration of 0.15M to replicate more accurately the real conditions. However, for the purposes of the tutorial, we're not adding any. Our system is already neutral so it won't necessarily affect the electrostatics.
 
 This process will take some minutes. Once it's done, you can check the resulting membrane with VMD or other visualization software such as [PyMOL](https://www.pymol.org).
 
@@ -32,132 +32,137 @@ This process will take some minutes. Once it's done, you can check the resulting
 vmd bilayer_only.pdb
 ```
 
-#### Transformation to GROMACS
+#### System topology and transformation to GROMACS
 
 Next, we need to obtain to obtain the Amber force field parameters (version 14SB, ff14SB) for our system. This is done with the processing tool `leap` that will output a .prmtop and .inpcrd files provided of a PDB file.
 
-> However, the recent versions of PACKMOL-Memgen tend to have some errors in the structure that crash when using GROMACS. We are going to do a small minimization of the system with `sander` to correct for that.
+```
+cp ../files/leap.in
+```
+```
+tleap -f leap.in
+```
+
+Recent versions of PACKMOL-Memgen tend to produce errors in GROMACS due to structure clashing. Perform a small minimization of the system with the `sander` module to correct it. Input parameters for `sander` are stated in a `system.sander` file. This process can take some time, you can check the progress in the  `system.sanderout` file.
 
 ```
-cp ../files/leap.in ../files/system.sander .
-tleap -f leap.in
+../files/system.sander .
+```
+```
 sander -O -i system.sander -o system.sanderout -p system.prmtop -c system.inpcrd -r system.rst -ref system.inpcrd
 ```
 
-With `leap` we process the system (from the output pdb file) and obtain the parameters for [AMBER](http://ambermd.org/) (.PRMTOP and .INPCRD). `sander` will take some time, you can check the progress in the `system.sanderout` file.
-
-However, we're simulating it with [GROMACS](https://manual.gromacs.org/), so we need to transform them to a .TOP and .GRO files, by means of `amb2gro_top_gro.py`. We can also output the minimization end coordinates, with the option `-b` in the command.
+At the moment, we have the required parameters to run the system in [Amber](https://ambermd.org/AmberMD.php) (equally valid). However, we are simulating in [GROMACS](https://manual.gromacs.org/), so we need to transform them to a .top and .gro files. This is done using `amb2gro_top_gro.py`. Additionally, output the minimization end coordinates with the `-b` option.
 
 ```
 amb2gro_top_gro.py -p system.prmtop -c system.rst -t system_GMX.top -g system_GMX.gro -b system_out.pdb
 ```
-
-#### Preparation
-
-Copy the "molecular dynamics parameters" files for the following part:
+Finally, copy the 'molecular dynamics parameters' files (.mdp) for the following parts.
 
 ```
 cp -r ../files/mdp .
 ```
 
-##### Energy minimization
+#### Energy minimization
 
-Once we have the necessary files for a simulation with GROMACS, we're going to continue with a short minimization (1000 steps), now in GROMACS (just to make sure). Open the file `mdp/min.mdp` to check what we're doing first.
+We are going to continue with a short minimization (1000 steps), now in GROMACS. Open the file `mdp/min.mdp` in a text editor to check what you are going to do first.
 
-Then, execute these two commands:
+Execute `gmx grompp` to generate a portable binary run file (.tpr), which contains the starting structure of your simulation, the molecular topology and all the simulation parameters.
 
 ```
 gmx grompp -f mdp/min.mdp -r system_GMX.gro -c system_GMX.gro -p system_GMX.top -o system_min.tpr -maxwarn 1
+```
+> Note: Read carefully the NOTES and WARNINGS that are printed during grompp. Usually these are a dead giveaway of wrongdoings that doom your runs to failure.
+
+Then, run `gmx mdrun` to perform the actual calculation.
+
+```
 gmx mdrun -deffnm system_min -v
 ```
 
-With the first command we generate the mdrun input file (.TPR), and with the second we perform the actual calculation. Once it's done, we need to equilibrate the system.
+#### Equilibration
 
-##### Equilibration
-
-We're going to perform a **three step equilibration** of our system ona a NPT ensemble. 
-
-Before doing that, we need to add these three lines in the `system_GMX.top` before the section (i. e. fractions of text/syntax between in brackets in GROMACS files):
+We are going to perform a three-step equilibration of our system on a NPT ensemble. For this, we need to add a positional restraints statement in the `system_GMX.top` for the lipids which will be gradually tuned down to reach equilibrium. This is done by including the following lines within the lipids' [ moleculetype ] section (named 'system1') but before the water's [ moleculetype ] section begins (named WAT, which can have its own set of positional restraints).
 
 ```
-...
-
-[ molecule type ]
-;molname    nrexcl
-WAT         2
-
-...
+#ifdef POSRES
+#include "posre.itp"
+#endif
 ```
 
-To make it look like this:
+Thus the `system_GMX.top` file should look something like this.
 
 ```
+[ moleculetype ]
+; Name            nrexcl
+system1          3
+
 ...
 
 #ifdef POSRES
 #include "posre.itp"
 #endif
 
-[ molecule type ]
-;molname    nrexcl
-WAT         2
+[ moleculetype ]
+; Name            nrexcl
+WAT          3
 
 ...
 ```
 
-Run the following command:
+The sequential equilibration runs will be executed through the `equi.sh` shell script. Examine the script, it contains four different sections. Figure out what each of them does. Notice also that each equilibration step has its own `equi*.mdp`.
+
+> Hint: you can use `vimdiff file1 file2` to compare two files and spot the differences more easily.
+
+Once you feel ready, execute the `equi.sh` shell script.
 
 ```
 chmod +x equi.sh
 ./equi.sh
 ```
 
-And now check the three equilibration files in the `mdp/` folder (`equi*.mdp`). Check the differences among them.
+**IMPORTANT: Without GPU support, the whole equilibration will take a long while. We are not gonna wait for all the steps to finish. Kill the process with `CTRL-C` and copy the `just_popc/*` files from the shared folder provided at the beginning of the class. Then continue with the protocol.**
 
-> HINT: you can use `vimdiff` followed by the files to compare them to spot the differences more easily.
-
-Also, check the script we're executing, and figure out what are the `gmx genrestr` and `gmx make_ndx` commands doing.
-
-The whole equilibration will probably take a long while. **So, we're not gonna wait for all the steps to finish. Kill the process and copy the `just_popc/system_equi1*` files from the shared OneDrive link provided at the beginning of the class, and continue with the protocol.**
-
-Now, visualize the time-evolution of the trajectory of the first equilibration step (equi1), with vmd:
+To visualize the time-evolution of the trajectory of the first equilibration step (equi1) use VMD (or any other visualization software).
 
 ```
 vmd system_min.gro system_equi1.xtc
 ```
 
-> The .TRR file in GROMACS contains the actual trajectory, but it's best to visualize it using the compressed file .XTC
+> Note: The .trr file in GROMACS contains the actual trajectory, but it's best to visualize it using the compressed file .xtc
 
-We're also going to assess some of the variables during the first equilibration step. We can do that using GROMACS's analysis tools, in this case we're using `gmx energy`:
+We are also going to assess some of the variables of this equilibration step. We can do that using GROMACS' analysis tools such as `gmx energy`.
 
 ```
 gmx energy -f system_equi1.edr -o equi1.xvg
 ```
 
-And then, we will pick the variables we want to assess by typing the following numbers: 
+Pick the variables we want to assess by typing the following numbers.
 
 `12 14 15 20 21 0`
 
-This way we're selecting the **total energy of the system**, **temperature**, **pressure**, **density** and **volume**. The final zero exits the prompt.
-
-To visualize the file you can either use `xmgrace` or execute the following python script:
+This way we are selecting the **total energy of the system**, **temperature**, **pressure**, **density** and **volume**. The final zero exits the prompt. To visualize the file you can either use `xmgrace` or execute the python script provided in this repo.
 
 ```
 python ../files/plot_xvg.py equi1.xvg
 ```
 
-It outputs a PNG image on the same location where the .XVG file is. See how the different variables change along time until stabilized.
+It outputs a .png image in the same location where the .xvg file is located. See how the different variables change along time until stabilized.
 
 #### Production
 
-Now we're ready to send the calculation. We're going to do a 100 ns long unbiased MD simulation.
+We are ready to start producing the proper simulation. We are going to do a 100 ns long unbiased MD simulation. Again, we execute `gmx grompp` and then `gmx mdrun`.
 
 ```
 gmx grompp -f mdp/prod.mdp -r system_equi3.gro -c system_equi3.gro -p system_GMX.top -o system_prod.tpr -n index.ndx -maxwarn 1
+```
+> Note: See what has changed between the equi3.mdp and prod.mdp files.
+```
 gmx mdrun -deffnm system_prod -v
 ```
-
-Okay, so you're going to notice that this is going to take too long to finish. That's why we're not going to wait until it's done. You can get the output in the same shared OneDrive link.
+**IMPORTANT: Two problems arise here:**
+- **1) If you use the provided output for the equilibration `gmx grompp` will likely not go through because the shared system_equi3.gro file and the previously generated system_GMX.top file don't match (inescapable condition). This is true as the two systems were built slightly different.**
+- **2) Again, the simulation run takes too long to finish. Proceed with the shared output files.**
 
 #### Analysis
 
