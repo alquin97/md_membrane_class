@@ -1,23 +1,21 @@
-# md_membrane_class
-
-# MD in a membrane environment
+# Molecular Dynamics in a Membrane Environment
 
 ![](practical/files/images/box+water.png)
 
-Welcome to the repository for the 11/01/2024 and 16/01/2024 lectures on MD of bilayers and membrane proteins.
+This repository is aimed at showing how to build membrane-embedded systems with PACKMOL-Memgen, run simulations with GROMACS and perform a very basic analysis of the membrane.
 
 ## Distribution
 
-Under [theory/](theory/) you have the theoretical presentation to the topic. Under [practical/](practical/) you have a [protocol](practical/README.md) with the different steps to be followed to:
+Under [theory/](theory/) you have the theoretical presentation to the topic. Under [practical/](practical/) you have a [protocol](practical/README.md) with the different steps to be followed. The protocol covers the following how-tos.
 - Build, minimize, equilibrate, simulate and analyze a POPC membrane system (under [just_popc/](practical/just_popc)).
 - Build and analyze a POPC+CHL membrane system (under [popc+chl/](practical/popc+chl)).
 - Build and analyze a POPC+CHL membrane system with an embedded membrane protein (under [membrane_protein/](practical/membrane_protein)).
 
 ## Main software
 
-- [PACKMOL-memgen](https://pubs.acs.org/doi/10.1021/acs.jcim.9b00269) to build the systems.
-- [GROMACS](https://manual.gromacs.org/) to prepare, simulate and analyze the simulations.
-- [FATSLiM](http://fatslim.github.io/) to analyze the membranes in the simulations.
+- [PACKMOL-memgen](https://pubs.acs.org/doi/10.1021/acs.jcim.9b00269) to build the membrane-embedded systems.
+- [GROMACS](https://manual.gromacs.org/) to prepare, produce and analyze the simulations.
+- [FATSLiM](http://fatslim.github.io/) to analyze the membrane in the simulations.
 
 ## Setting up
 
@@ -25,7 +23,7 @@ In this repo we assume the [Anaconda](https://www.anaconda.com/) package manager
 
 ### Installing miniconda
 
-A lighter version of [Anaconda](https://www.anaconda.com/) can be installed, and that is [miniconda](https://docs.conda.io/en/latest/miniconda.html). To download and install it:
+A lighter version of [Anaconda](https://www.anaconda.com/) can be installed, and that is [miniconda](https://docs.conda.io/en/latest/miniconda.html). Download and install the latest version of miniconda (for your current OS) using the following commands.
 
 ```
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -33,40 +31,39 @@ chmod +x Miniconda3-latest-Linux-x86_64.sh
 ./Miniconda3-latest-Linux-x86_64.sh
 ```
 
-Follow the instructions.
-
 Once you have it installed, you probably have to restart your terminal or do `source ~/.bashrc`, and then `conda init bash`.
 
 ### Creating an environment
 
-Now we're going to create an environment and we're going to call it `membranes`:
+Create a conda environment with the name `md_membrane`. Virtual environments are isolated working environments each with their own independent set of Python packages installed to ensure compatibility within the same project.
 
 ```
-conda create -n md_membrane_class python=3.8
-conda activate md_membrane_class
+conda create -n md_membrane python=3.8
+conda activate md_membrane
 ```
 
-And install all the packages needed through `conda install`:
+Next, install all the packages needed through `conda install`. PACKMOL-Memgen is included in the `ambertools` package suite.
 
 ```
 conda install -c conda-forge numpy=1.21 pandas matplotlib pytest ambertools
 ```
 
-Say `Y`.
+### Installing GROMACS and FATSLiM
 
-### Installing the rest of the software
-
-We might need to install the molecular dynamics machine as well. First check if it's installed in your system by typing `gmx help` or `which gmx` in your shell. If there's no prompt or the software is not installed, do:
+Check if GROMACS is installed in your system by typing `gmx help` or `which gmx` in your shell. If there's no prompt or the software is not installed, do the following.
 
 ```
 sudo apt install gromacs
 ```
+> Note: This version of GROMACS does not have GPU support.
 
-To install FATSLiM and test if it works:
+Then install FATSLiM. Additionally, test that there are no major errors with the `self-test` functionality.
 
 ```
 pip install fatslim
-fatslim self-test
 ```
 
-To start working with the practical part, `git clone` this repo anywhere you want in your local machine and follow the steps of the [protocol](practical/README.md).
+```
+fatslim self-test
+```
+Once everything is up and running proceed to the [protocol](practical/README.md) to begin the practical part.
