@@ -216,6 +216,14 @@ Check how it looks like again with `vmd`. Spot where the cholesterol molecules a
 
 In the same OneDrive link provided before there's also a 100 ns simulation of a similar POPC+CHL membrane system. Repeat the previous analysis to measure the membrane thickness and APL, and compare those to the POPC-only membrane.
 
+```
+gmx make_ndx -f system_equi3.gro -o fatslim.ndx<<EOF
+r PC | r CHL & a P31 | a O1
+name 9 headgroups
+q
+EOF
+```
+
 ## Protein-Membrane system
 
 This part of the protocol will be done under `membrane_protein/`:
