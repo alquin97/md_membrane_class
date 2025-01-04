@@ -1,5 +1,11 @@
 # Protocol
 
+Before you start, clone this repo anywhere you want in your local machine.
+
+```
+git clone https://github.com/alquin97/md_membrane_class
+```
+
 ## Simple membrane system
 
 ### Just POPC
