@@ -16,9 +16,9 @@ This part of the protocol will be done under `just_popc/`:
 cd just_popc
 ```
 
-#### Membrane creation with [packmol-memgen](https://pubs.acs.org/doi/10.1021/acs.jcim.9b00269)
+#### Membrane creation with [PACKMOL-Memgen](https://pubs.acs.org/doi/10.1021/acs.jcim.9b00269)
 
-First, we're going to create a membrane with just POPC. With the following command, we're defining a 75x75 A membrane.
+First, create a membrane with just POPC. With the following command, we're defining a 75x75 A membrane.
 
 ```
 packmol-memgen --lipids POPC --distxy_fix 75
@@ -26,20 +26,17 @@ packmol-memgen --lipids POPC --distxy_fix 75
 
 > Note: we're not adding any concentration of ions. Ideally there should be a salt concentration of 0.15M to replicate more accurately the real conditions. However, for the purposes of the tutorial, we're not adding any. Our system is already neutral so it won't necessarily affect the electrostatics.
 
-The process will likely take about 5 minutes.
-
-Once it's done, you can check the resulting membrane with VMD:
+This process will take some minutes. Once it's done, you can check the resulting membrane with VMD or other visualization software such as [PyMOL](https://www.pymol.org).
 
 ```
 vmd bilayer_only.pdb
 ```
 
-
 #### Transformation to GROMACS
 
-In this part, we're going to obtain the amber ff parameters (version 14SB) for the system.
+Next, we need to obtain to obtain the Amber force field parameters (version 14SB, ff14SB) for our system. This is done with the processing tool `leap` that will output a .prmtop and .inpcrd files provided of a PDB file.
 
-> However, the recent versions of PACKMOL-memgen tend to have some errors in the structure that crush when using GROMACS. So, we're going to do a small minimization of the system with `sander` to correct for that.
+> However, the recent versions of PACKMOL-Memgen tend to have some errors in the structure that crash when using GROMACS. We are going to do a small minimization of the system with `sander` to correct for that.
 
 ```
 cp ../files/leap.in ../files/system.sander .
