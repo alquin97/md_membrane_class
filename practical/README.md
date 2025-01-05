@@ -160,8 +160,8 @@ gmx grompp -f mdp/prod.mdp -r system_equi3.gro -c system_equi3.gro -p system_GMX
 ```
 gmx mdrun -deffnm system_prod -v
 ```
-**IMPORTANT: Two problems arise here:**
-- **1) If you use the externally provided output of the equilibration, `gmx grompp` will likely not go through because the shared system_equi3.gro file and your previously generated system_GMX.top file don't match in atom number (inescapable condition). This is true as the two systems were built slightly different (different PACKMOL-Memgen runs).**
+**IMPORTANT: Two problems may arise here:**
+- **1) `gmx grompp` doesn't go through because system_equi3.gro file and system_GMX.top file don't match in atom number (inescapable condition). If you got the shared system_equi3.gro this might be true as the two systems were built slightly different (different PACKMOL-Memgen runs).**
 - **2) Again, the simulation run takes too long to finish. Proceed with the shared output files.**
 
 Once finished, see what the simulation looks like.
