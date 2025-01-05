@@ -37,7 +37,7 @@ vmd bilayer_only.pdb
 Next, we need to obtain to obtain the Amber force field parameters (version 14SB, ff14SB) for our system. This is done with the processing tool `leap` that will output a .prmtop and .inpcrd files provided of a PDB file.
 
 ```
-cp ../files/leap.in
+cp ../files/leap.in .
 ```
 ```
 tleap -f leap.in
