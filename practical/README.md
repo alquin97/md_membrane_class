@@ -46,7 +46,7 @@ tleap -f leap.in
 Recent versions of PACKMOL-Memgen tend to produce errors in GROMACS due to structure clashing. Perform a small minimization of the system with the `sander` module to correct it. Input parameters for `sander` are stated in a `system.sander` file. This process can take some time, you can check the progress in the  `system.sanderout` file.
 
 ```
-../files/system.sander .
+cp ../files/system.sander .
 ```
 ```
 sander -O -i system.sander -o system.sanderout -p system.prmtop -c system.inpcrd -r system.rst -ref system.inpcrd
