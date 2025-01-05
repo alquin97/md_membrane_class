@@ -207,6 +207,10 @@ fatslim apl -c system_equi3.gro -t system_prod.xtc -n fatslim.ndx --plot-apl apl
 
 And, just like before, the APL per leaflet, for the whole membrane, and a plot over time is generated.
 
+```
+python ../files/plot_xvg.py apl.xvg
+```
+
 ### POPC+CHL
 
 This part of the protocol will be done under `popc+chl/`:
