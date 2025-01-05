@@ -49,7 +49,7 @@ conda activate md_membrane_class
 Next, install all the packages needed through `conda install`. PACKMOL-Memgen is included in the `ambertools` package suite.
 
 ```
-conda install -c conda-forge numpy=1.21 pandas matplotlib pytest ambertools
+conda install -c conda-forge numpy=1.22 pandas matplotlib pytest ambertools
 ```
 
 ### Installing GROMACS and FATSLiM
