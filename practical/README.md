@@ -304,7 +304,7 @@ python ../files/plot_xvg.py rmsf.xvg
 
 #### Secondary Structure analysis
 
-Last, we are going to perform a simple secondary structure analysis to further assess the stability of the transmembrane helices.
+Lastly, we are going to perform a simple secondary structure analysis to further assess the stability of the transmembrane helices.
 
 ```
 gmx dssp -f system_prod.xtc -s system_equi6.gro -o dssp.dat
